@@ -5,7 +5,7 @@ date: "19 November 2016"
 output: html_document
 ---
 # Loading Required packages
-```{r,include=TRUE}
+```{r,include=TRUE,fig.show='asis'}
 library(dplyr)
 
 library(ggplot2)
@@ -16,12 +16,16 @@ library(lubridate)
 # Loading and preprocessing the data
 ```{r, include=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
-unzip(zipfile = "/home/hduser/Downloads/data_activity.zip")
+
 data<-read.csv("activity.csv")
 data$date <- ymd(data$date)
 ```
+
 # What is mean total number of steps taken per day?
+
 ## Calculate the total number of steps taken per day
+
+
 ```{r,include=TRUE}
 data.byday <- data %>% 
   group_by(date) %>%
@@ -30,9 +34,9 @@ data.byday <- data %>%
 
 * Histogram of the total number of steps taken each day
 
-```{r,include=TRUE}
+```{r,include=TRUE,fig.show='asis'}
 ggplot(data = data.byday, aes(x = totalsteps)) +
-  geom_histogram() +
+  geom_histogram(binwidth = 1000) +
   labs(title = "Histogram: number of steps by day",
        x = "Number of steps",
        y = "Frequency")
@@ -47,11 +51,11 @@ mediansteps <- median(data.byday$totalsteps, na.rm = T)
 
 
 ---
-What is the average daily data pattern?
-Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
++ What is the average daily data pattern?
++ Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and         the average number of steps taken, averaged across all days (y-axis)
 ---
 
-```{r,include=TRUE}
+```{r,include=TRUE,fig.show='asis'}
 data.byinterval <- group_by(data, interval) %>% 
   mutate(meansteps = mean(steps, na.rm = T))
 
@@ -71,7 +75,8 @@ ggplot(data = data.byinterval,
 maxsteps <- data.byinterval[which.max(data.byinterval$meansteps), ]
 ```
 ---
-The r maxsteps$interval minute interval contains the maximum number of steps (r maxsteps$meansteps) on average across all the days.
+The r maxsteps$interval minute interval contains the maximum number of steps 
+(r maxsteps$meansteps) on average across all the days.
 Imputing missing values
 Calculate and report the total number of missing values in the dataset (i.e.
 
@@ -93,7 +98,9 @@ imputed <- group_by(interval, .data = data) %>%
   mutate(steps = ifelse(is.na(steps), as.integer(mean(steps, na.rm = T)), steps))
 ```
 ### Make a histogram of the total number of steps taken each day
-```{r,include=TRUE}
+
+
+```{r,include=TRUE,fig.show='asis'}
 imputed.byday <- group_by(date, .data = imputed) %>%
   mutate(totalsteps = sum(steps))
 
@@ -124,7 +131,9 @@ imputed <- imputed %>%
 ---
 Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
 ---
-```{r,include=TRUE}
+
+
+```{r,include=TRUE,fig.show='asis'}
 imputed.byinterval <- group_by(interval, weekday, .data = imputed) %>% 
   mutate(meansteps = mean(steps, na.rm = T))
 
