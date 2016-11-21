@@ -1,0 +1,230 @@
+---
+title: "Reproducible Research Course Project 2"
+author: "Tikam Singh"
+date: "20 November 2016"
+output: html_document
+---
+# **STUDY REPORT ** - Public Health and Economic Problems Due Severe Weather Events in US    
+ 
+##      1 - Synopsis
+This is a study report of U.S. National Oceanic and Atmospheric Administration’s (NOAA) database. The aim of this study is to find out the worst weather event type in terms of population health and economic consequences in US from 1950 to 2011. The analysis shows Tornado was the most harmful weather event type in terms of population health while Flood was the weather event type had the worst economic impact.                 
+
+##      2 - Data Processing
+###     2.1 - Loading Data
+
+* The data for this study come from the U.S. National Oceanic and Atmospheric Administration’s (NOAA) database.The data can be obtained from the course web site: * [Strom Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2).
+
+* The events in the database start in the year 1950 and end in November 2011.
+
+* The definition & construction of variables are available from National Weather Service Storm Data [Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf).
+
+* This study is conducted in R Studio (Version 0.99.491). The required packages are ggplot2:
+
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+if(!require(ggplot2)) install.packages("ggplot2")
+if(!require(dplyr)) installed.packages("dplyr")
+if(!require(readr)) installed.packages("readr")
+```
+        * Download data from source and load data into dataframe:
+```{r,include=TRUE}
+data <-  "repdata data StormData.csv.bz2"
+if (!file.exists(data)) {
+        
+        download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2",data)
+}
+if(!exists('storm_data')) {
+        storm_data <- read.csv("repdata data StormData.csv.bz2", stringsAsFactors = FALSE)
+}
+```
+
+###     2.2 - Subseting Data
+
+        * Explore and have a brief idea of the dataset:
+```{r,include=TRUE}
+str(storm_data)
+```
+
+
+                * I subset only the desire variables for the following study, which are the event types (“EVTYPE”) and  related to population health impacts ( “Fatalities” and “Injures”“) and economic consequences (variable”PropDMG“,”PROPDMGEXP“,”CROPDMG" and “CROPDMGEXP”) where All the variables are greater tha zero:
+
+
+```{r,include=TRUE}
+subset <- subset(storm_data ,select =
+                         c("EVTYPE","FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG", "CROPDMGEXP"),
+                 EVTYPE != "?" & (FATALITIES >  0 | INJURIES > 0 | PROPDMG > 0 |                                            CROPDMG > 0))
+```
+## 2.3 - Cleaning Event Type Data
+
+        * Check out the construction of Event Type:
+```{r,include=TRUE}
+head(unique(subset$EVTYPE), 20)
+```
+
+```{r,include=TRUE}
+length(unique(subset$EVTYPE))
+
+```
+
+```{r,include=TRUE}
+subset$EVTYPE <- toupper(subset$EVTYPE)
+  # Then I combine similar event types.
+  subset$EVTYPE <- gsub('.*HEAT.*', 'HEAT', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*WARM.*', 'HEAT', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*HIGH.*TEMP.*', 'EXTREME HEAT', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*RECORD HIGH TEMPERATURES.*', 'EXTREME HEAT', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*STORM.*', 'STORM', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*FLOOD.*', 'FLOOD', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*WIND.*', 'WIND', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*TORNADO.*', 'TORNADO', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*CLOUD.*', 'CLOUD', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*MICROBURST.*', 'MICROBURST', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*BLIZZARD.*', 'BLIZZARD', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*COLD.*', 'COLD', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*SNOW.*', 'COLD', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*FREEZ.*', 'COLD', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*LOW TEMPERATURE RECORD.*', 'COLD', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*ICE.*', 'COLD', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*FROST.*', 'COLD', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*LO.*TEMP.*', 'COLD', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*HAIL.*', 'HAIL', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*DRY.*', 'DRY', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*DUST.*', 'DUST', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*RAIN.*', 'RAIN', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*LIGHTNING.*', 'LIGHTNING', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*SUMMARY.*', 'SUMMARY', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*WET.*', 'WET', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*FIRE.*', 'FIRE', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*FOG.*', 'FOG', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*VOLCANIC.*', 'VOLCANIC', subset$EVTYPE)
+  subset$EVTYPE <- gsub('.*SURF.*', 'SURF', subset$EVTYPE)
+  
+```
+
+```{r,include=TRUE}
+length(unique(subset$EVTYPE))
+
+```
+## 2.4 - Cleaning Economic Data
+   
+        * Check out the construction of “PROPDMGEXP” & “CROPDMGEXP”:                         
+```{r,include=TRUE}
+ table(subset$PROPDMGEXP)
+```
+  
+  
+```{r,include=TRUE}
+table(subset$CROPDMGEXP)
+```
+        * I convert variable “PROPDMGEXP” & “CROPDMGEXP” into multiplier factors and calculate the cost of property damage and crop damage:
+
+```{r,include=TRUE}
+     
+
+  # Convert all strings to upper case:
+  subset$PROPDMGEXP <- toupper(subset$PROPDMGEXP)
+  subset$CROPDMGEXP <- toupper(subset$CROPDMGEXP)
+
+  # Update the multiplier factor of PROPDMG
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='')|(subset$PROPDMGEXP=='-')|(subset$PROPDMGEXP=='?')|(subset$PROPDMGEXP=='+')|(subset$PROPDMGEXP=='0')] <- 0
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='1')] <- 1
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='2')] <- 2
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='3')] <- 3
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='4')] <- 4
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='5')] <- 5
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='6')] <- 6
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='7')] <- 7
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='8')] <- 8
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='H')] <- 2
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='K')] <- 3
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='M')] <- 6
+  subset$PROPDMGEXP1[(subset$PROPDMGEXP=='B')] <- 9
+  
+  # Update the multiplier factor of CROPDMG
+  subset$CROPDMGEXP1[(subset$CROPDMGEXP=='')|(subset$CROPDMGEXP=='-')|(subset$CROPDMGEXP=='?')|(subset$CROPDMGEXP=='+')|(subset$CROPDMGEXP=='0')] <- 0
+  subset$CROPDMGEXP1[(subset$CROPDMGEXP=='K')] <- 3
+  subset$CROPDMGEXP1[(subset$CROPDMGEXP=='M')] <- 6
+  subset$CROPDMGEXP1[(subset$CROPDMGEXP=='B')] <- 9
+  
+  # Calculate cost of damages
+  subset$PROPDMGCOST <- subset$PROPDMG*10^as.numeric(subset$PROPDMGEXP1)
+  subset$CROPDMGCOST <- subset$CROPDMG*10^as.numeric(subset$CROPDMGEXP1)
+```
+
+## 2.5 - Summarizing Data
+
+        * Create a new dataset to summarize the Health Impact (total number of fatalities and injures), then sort the result at decreasing order:
+
+```{r,include=TRUE}
+  subset2 <- aggregate( x = list(Health_Impact = subset$FATALITIES + subset$INJURIES), 
+                        by=list(EVENT_TYPE=subset$EVTYPE), 
+                        FUN=sum, na.rm=TRUE)
+  subset2 <- subset2[order(subset2$Health_Impact, decreasing=T),]
+```
+        * Create a new dataset to summarize the Damage Cost (total cost of property damage and crop damage), then sort the result at decreasing order:
+        
+```{r,include=TRUE}
+  subset3 <- aggregate( x = list(Damage_Cost = subset$PROPDMGCOST + subset$CROPDMGCOST), 
+                        by=list(EVENT_TYPE=subset$EVTYPE), 
+                        FUN=sum, na.rm=TRUE)
+  subset3 <- subset3[order(subset3$Damage_Cost, decreasing=T),]
+```
+
+##3.1 - Find out the top 10 harmful weather event type with respect to population health
+
+        * Produce the pareto chart of the worst 10 weather events in terms of population     health:
+```{r,include=TRUE}
+ HealthImpactChart <- ggplot(head(subset2,10), aes(x=reorder(EVENT_TYPE, -Health_Impact), y=Health_Impact, fill = EVENT_TYPE)) +   
+                        geom_bar(stat="identity") + 
+                        xlab("Event Type") + ylab("Total Fatalities & Injures Qty.") + 
+                        ggtitle("Pareto Chart of Top 10 Weather Events in US - Health Impacts") 
+  
+  print(HealthImpactChart)
+  
+```
+        *Show the exact number of health impacts of above chart:
+```{r,include=TRUE}
+head(subset2,10)
+```
+
+###3.2 - Find out the top 10 weather event types have the greatest economic consequences
+
+        *pareto chart of the worst 10 weather events in terms of economic consequences:
+```{r,include=TRUE}
+  DamageCostChart <- ggplot(head(subset3,10), aes(x=reorder(EVENT_TYPE, -Damage_Cost), y=Damage_Cost, fill = EVENT_TYPE)) +   
+                        geom_bar(stat="identity") + 
+                        xlab("Event Type") + ylab("Total Damage Cost ($)") + 
+                        ggtitle("Pareto Chart of Top 10 Weather Events in US - Economic Impacts") 
+  
+  print(DamageCostChart)
+```
+
+
+        * The exact damage cost of above chart:
+```{r,include=TRUE}
+head(subset3,10)
+```
+#4 Conclusions
+The outcome of NOAA database study between 1950 and 2011 shows the worst weather events type are presented as below:
+## 4.1 - Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+
+        * Tornado was the most harmful weather event type in terms of population health.
+
+##4.2 - Across the United States, which types of events have the greatest economic consequences?
+
+        * Flood was the worst weather event type in terms of economic consequences.
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
